@@ -1,23 +1,105 @@
 const fs = require("fs");
 
-// ============================================================
-// Function 1: getShiftDuration(startTime, endTime)
-// startTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
-// endTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
-// Returns: string formatted as h:mm:ss
-// ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+
+    function toSeconds(time) {
+        time = time.trim();
+        let parts = time.split(" ");
+        let timePart = parts[0];
+        let period = parts[1];
+
+        let t = timePart.split(":");
+        let h = parseInt(t[0]);
+        let m = parseInt(t[1]);
+        let s = parseInt(t[2]);
+
+        if (period === "pm" && h !== 12) {
+            h += 12;
+        }
+
+        if (period === "am" && h === 12) {
+            h = 0;
+        }
+
+        return h * 3600 + m * 60 + s;
+    }
+
+    function toTime(seconds) {
+        let h = Math.floor(seconds / 3600);
+        seconds = seconds % 3600;
+
+        let m = Math.floor(seconds / 60);
+        let s = seconds % 60;
+
+        if (m < 10) m = "0" + m;
+        if (s < 10) s = "0" + s;
+
+        return h + ":" + m + ":" + s;
+    }
+
+    let start = toSeconds(startTime);
+    let end = toSeconds(endTime);
+
+    let diff = end - start;
+
+    return toTime(diff);
 }
 
-// ============================================================
-// Function 2: getIdleTime(startTime, endTime)
-// startTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
-// endTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
-// Returns: string formatted as h:mm:ss
-// ============================================================
+
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+
+    function toSeconds(time) {
+        time = time.trim();
+        let parts = time.split(" ");
+        let timePart = parts[0];
+        let period = parts[1];
+
+        let t = timePart.split(":");
+        let h = parseInt(t[0]);
+        let m = parseInt(t[1]);
+        let s = parseInt(t[2]);
+
+        if (period === "pm" && h !== 12) {
+            h += 12;
+        }
+
+        if (period === "am" && h === 12) {
+            h = 0;
+        }
+
+        return h * 3600 + m * 60 + s;
+    }
+
+    function toTime(seconds) {
+        let h = Math.floor(seconds / 3600);
+        seconds = seconds % 3600;
+
+        let m = Math.floor(seconds / 60);
+        let s = seconds % 60;
+
+        if (m < 10) m = "0" + m;
+        if (s < 10) s = "0" + s;
+
+        return h + ":" + m + ":" + s;
+    }
+
+    let start = toSeconds(startTime);
+    let end = toSeconds(endTime);
+
+    let startDelivery = 8 * 3600;   // 8:00 AM
+    let endDelivery = 22 * 3600;    // 10:00 PM
+
+    let idle = 0;
+
+    if (start < startDelivery) {
+        idle += Math.min(end, startDelivery) - start;
+    }
+
+    if (end > endDelivery) {
+        idle += end - Math.max(start, endDelivery);
+    }
+
+    return toTime(idle);
 }
 
 // ============================================================
