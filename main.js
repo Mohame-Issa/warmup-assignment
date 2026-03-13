@@ -175,7 +175,6 @@ function metQuota(date , activeTime){
 }
 //////
 
-const fs = require("fs");
 
 function addShiftRecord(textFile , shiftObj){
 
@@ -248,7 +247,6 @@ function addShiftRecord(textFile , shiftObj){
 
 function setBonus(textFile , driverID , date , newValue){
 
-    const fs = require("fs");
 
     let data = fs.readFileSync(textFile , "utf8");
     let lines = data.trim().split("\n");
@@ -276,7 +274,6 @@ function setBonus(textFile , driverID , date , newValue){
 
 function countBonusPerMonth(textFile , driverID , month){
 
-    const fs = require("fs");
 
     let data = fs.readFileSync(textFile , "utf8");
     let lines = data.trim().split("\n");
@@ -317,7 +314,6 @@ function countBonusPerMonth(textFile , driverID , month){
 
 function getTotalActiveHoursPerMonth(textFile , driverID , month){
 
-    const fs = require("fs");
 
     function toSeconds(t){
         let p = t.split(":");
@@ -369,7 +365,7 @@ function getTotalActiveHoursPerMonth(textFile , driverID , month){
 
 function getRequiredHoursPerMonth(textFile , rateFile , bonusCount , driverID , month){
 
-    const fs = require("fs");
+
 
     function toTime(sec){
 
@@ -446,7 +442,7 @@ function getRequiredHoursPerMonth(textFile , rateFile , bonusCount , driverID , 
 
 function getNetPay(driverID , actualHours , requiredHours , rateFile){
 
-    const fs = require("fs");
+
 
     function toSeconds(t){
         let p = t.split(":");
