@@ -6,7 +6,7 @@ function getShiftDuration(startTime, endTime) {
         time = time.trim();
         let parts = time.split(" ");
         let timePart = parts[0];
-        let period = parts[1];
+        let period = parts[2];
 
         let t = timePart.split(":");
         let h = parseInt(t[0]);
