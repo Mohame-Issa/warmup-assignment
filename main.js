@@ -44,7 +44,7 @@ function getShiftDuration(startTime, endTime) {
 
     return toTime(diff);
 }
-
+/////
 
 function getIdleTime(startTime, endTime) {
 
@@ -101,6 +101,7 @@ function getIdleTime(startTime, endTime) {
 
     return toTime(idle);
 }
+/////////
 
 function getActiveTime(shiftDuration , idleTime){
 
@@ -135,6 +136,7 @@ function getActiveTime(shiftDuration , idleTime){
     return toTime(active);
 
 }
+////////
 
 function metQuota(date , activeTime){
 
@@ -171,6 +173,7 @@ function metQuota(date , activeTime){
     }
 
 }
+//////
 
 const fs = require("fs");
 
@@ -241,64 +244,265 @@ function addShiftRecord(textFile , shiftObj){
     return newObj;
 
 }
+///////////
 
-// ============================================================
-// Function 6: setBonus(textFile, driverID, date, newValue)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// date: (typeof string) formatted as yyyy-mm-dd
-// newValue: (typeof boolean)
-// Returns: nothing (void)
-// ============================================================
-function setBonus(textFile, driverID, date, newValue) {
-    // TODO: Implement this function
+function setBonus(textFile , driverID , date , newValue){
+
+    const fs = require("fs");
+
+    let data = fs.readFileSync(textFile , "utf8");
+    let lines = data.trim().split("\n");
+
+    for(let i = 0 ; i < lines.length ; i++){
+
+        let cols = lines[i].split(",");
+
+        if(cols[0] == driverID && cols[2] == date){
+
+            cols[9] = String(newValue);
+
+            lines[i] = cols.join(",");
+
+        }
+
+    }
+
+    let newData = lines.join("\n");
+
+    fs.writeFileSync(textFile , newData);
+
+}
+//////////
+
+function countBonusPerMonth(textFile , driverID , month){
+
+    const fs = require("fs");
+
+    let data = fs.readFileSync(textFile , "utf8");
+    let lines = data.trim().split("\n");
+
+    let count = 0;
+    let exists = false;
+
+    month = parseInt(month);
+
+    for(let i = 0 ; i < lines.length ; i++){
+
+        let cols = lines[i].split(",");
+
+        if(cols[0] == driverID){
+
+            exists = true;
+
+            let date = cols[2].split("-");
+            let m = parseInt(date[1]);
+
+            if(m == month && cols[9] == "true"){
+                count++;
+            }
+
+        }
+
+    }
+
+    if(!exists){
+        return -1;
+    }
+
+    return count;
+
+}
+////////////
+
+
+function getTotalActiveHoursPerMonth(textFile , driverID , month){
+
+    const fs = require("fs");
+
+    function toSeconds(t){
+        let p = t.split(":");
+        return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseInt(p[2]);
+    }
+
+    function toTime(sec){
+
+        let h = Math.floor(sec/3600);
+        sec = sec % 3600;
+
+        let m = Math.floor(sec/60);
+        let s = sec % 60;
+
+        if(m < 10) m = "0"+m;
+        if(s < 10) s = "0"+s;
+
+        return h + ":" + m + ":" + s;
+
+    }
+
+    let data = fs.readFileSync(textFile , "utf8");
+    let lines = data.trim().split("\n");
+
+    let total = 0;
+
+    for(let i = 0 ; i < lines.length ; i++){
+
+        let cols = lines[i].split(",");
+
+        if(cols[0] == driverID){
+
+            let date = cols[2].split("-");
+            let m = parseInt(date[1]);
+
+            if(m == month){
+
+                total += toSeconds(cols[7]);
+
+            }
+
+        }
+
+    }
+
+    return toTime(total);
+
 }
 
-// ============================================================
-// Function 7: countBonusPerMonth(textFile, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// month: (typeof string) formatted as mm or m
-// Returns: number (-1 if driverID not found)
-// ============================================================
-function countBonusPerMonth(textFile, driverID, month) {
-    // TODO: Implement this function
+function getRequiredHoursPerMonth(textFile , rateFile , bonusCount , driverID , month){
+
+    const fs = require("fs");
+
+    function toTime(sec){
+
+        let h = Math.floor(sec/3600);
+        sec = sec % 3600;
+
+        let m = Math.floor(sec/60);
+        let s = sec % 60;
+
+        if(m < 10) m = "0"+m;
+        if(s < 10) s = "0"+s;
+
+        return h + ":" + m + ":" + s;
+
+    }
+
+    let rateData = fs.readFileSync(rateFile , "utf8").trim().split("\n");
+
+    let dayOff = "";
+
+    for(let i = 0 ; i < rateData.length ; i++){
+
+        let cols = rateData[i].split(",");
+
+        if(cols[0] == driverID){
+            dayOff = cols[1];
+        }
+
+    }
+
+    let data = fs.readFileSync(textFile , "utf8").trim().split("\n");
+
+    let total = 0;
+
+    for(let i = 0 ; i < data.length ; i++){
+
+        let cols = data[i].split(",");
+
+        if(cols[0] == driverID){
+
+            let date = cols[2];
+            let d = date.split("-");
+            let m = parseInt(d[1]);
+            let day = parseInt(d[2]);
+
+            if(m == month){
+
+                let weekday = new Date(date).toLocaleDateString("en-US",{weekday:"long"});
+
+                if(weekday != dayOff){
+
+                    if(m == 4 && day >=10 && day <=30){
+                        total += 6*3600;
+                    }
+                    else{
+                        total += 8*3600 + 24*60;
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    total -= bonusCount * 2 * 3600;
+
+    if(total < 0) total = 0;
+
+    return toTime(total);
+
 }
 
-// ============================================================
-// Function 8: getTotalActiveHoursPerMonth(textFile, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// driverID: (typeof string)
-// month: (typeof number)
-// Returns: string formatted as hhh:mm:ss
-// ============================================================
-function getTotalActiveHoursPerMonth(textFile, driverID, month) {
-    // TODO: Implement this function
-}
+function getNetPay(driverID , actualHours , requiredHours , rateFile){
 
-// ============================================================
-// Function 9: getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month)
-// textFile: (typeof string) path to shifts text file
-// rateFile: (typeof string) path to driver rates text file
-// bonusCount: (typeof number) total bonuses for given driver per month
-// driverID: (typeof string)
-// month: (typeof number)
-// Returns: string formatted as hhh:mm:ss
-// ============================================================
-function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month) {
-    // TODO: Implement this function
-}
+    const fs = require("fs");
 
-// ============================================================
-// Function 10: getNetPay(driverID, actualHours, requiredHours, rateFile)
-// driverID: (typeof string)
-// actualHours: (typeof string) formatted as hhh:mm:ss
-// requiredHours: (typeof string) formatted as hhh:mm:ss
-// rateFile: (typeof string) path to driver rates text file
-// Returns: integer (net pay)
-// ============================================================
-function getNetPay(driverID, actualHours, requiredHours, rateFile) {
-    // TODO: Implement this function
+    function toSeconds(t){
+        let p = t.split(":");
+        return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseInt(p[2]);
+    }
+
+    let data = fs.readFileSync(rateFile , "utf8").trim().split("\n");
+
+    let basePay = 0;
+    let tier = 0;
+
+    for(let i = 0 ; i < data.length ; i++){
+
+        let cols = data[i].split(",");
+
+        if(cols[0] == driverID){
+
+            basePay = parseInt(cols[2]);
+            tier = parseInt(cols[3]);
+
+        }
+
+    }
+
+    let actual = toSeconds(actualHours);
+    let required = toSeconds(requiredHours);
+
+    if(actual >= required){
+        return basePay;
+    }
+
+    let missing = required - actual;
+
+    let allowance = 0;
+
+    if(tier == 1) allowance = 50*3600;
+    if(tier == 2) allowance = 20*3600;
+    if(tier == 3) allowance = 10*3600;
+    if(tier == 4) allowance = 3*3600;
+
+    let billable = missing - allowance;
+
+    if(billable <= 0){
+        return basePay;
+    }
+
+    let billableHours = Math.floor(billable / 3600);
+
+    let deductionRate = Math.floor(basePay / 185);
+
+    let deduction = billableHours * deductionRate;
+
+    let netPay = basePay - deduction;
+
+    return netPay;
+
 }
 
 module.exports = {
