@@ -102,34 +102,144 @@ function getIdleTime(startTime, endTime) {
     return toTime(idle);
 }
 
-// ============================================================
-// Function 3: getActiveTime(shiftDuration, idleTime)
-// shiftDuration: (typeof string) formatted as h:mm:ss
-// idleTime: (typeof string) formatted as h:mm:ss
-// Returns: string formatted as h:mm:ss
-// ============================================================
-function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+function getActiveTime(shiftDuration , idleTime){
+
+    function toSeconds(t){
+        let parts = t.split(":");
+        let h = parseInt(parts[0]);
+        let m = parseInt(parts[1]);
+        let s = parseInt(parts[2]);
+
+        return h*3600 + m*60 + s;
+    }
+
+    function toTime(sec){
+
+        let h = Math.floor(sec/3600);
+        sec = sec % 3600;
+
+        let m = Math.floor(sec/60);
+        let s = sec % 60;
+
+        if(m < 10) m = "0" + m;
+        if(s < 10) s = "0" + s;
+
+        return h + ":" + m + ":" + s;
+    }
+
+    let shift = toSeconds(shiftDuration);
+    let idle = toSeconds(idleTime);
+
+    let active = shift - idle;
+
+    return toTime(active);
+
 }
 
-// ============================================================
-// Function 4: metQuota(date, activeTime)
-// date: (typeof string) formatted as yyyy-mm-dd
-// activeTime: (typeof string) formatted as h:mm:ss
-// Returns: boolean
-// ============================================================
-function metQuota(date, activeTime) {
-    // TODO: Implement this function
+function metQuota(date , activeTime){
+
+    function toSeconds(t){
+        let p = t.split(":");
+        let h = parseInt(p[0]);
+        let m = parseInt(p[1]);
+        let s = parseInt(p[2]);
+
+        return h*3600 + m*60 + s;
+    }
+
+    let parts = date.split("-");
+    let year = parseInt(parts[0]);
+    let month = parseInt(parts[1]);
+    let day = parseInt(parts[2]);
+
+    let active = toSeconds(activeTime);
+
+    let quota;
+
+    if(year == 2025 && month == 4 && day >= 10 && day <= 30){
+        quota = 6 * 3600;
+    }
+    else{
+        quota = 8*3600 + 24*60;
+    }
+
+    if(active >= quota){
+        return true;
+    }
+    else{
+        return false;
+    }
+
 }
 
-// ============================================================
-// Function 5: addShiftRecord(textFile, shiftObj)
-// textFile: (typeof string) path to shifts text file
-// shiftObj: (typeof object) has driverID, driverName, date, startTime, endTime
-// Returns: object with 10 properties or empty object {}
-// ============================================================
-function addShiftRecord(textFile, shiftObj) {
-    // TODO: Implement this function
+const fs = require("fs");
+
+function addShiftRecord(textFile , shiftObj){
+
+    let data = fs.readFileSync(textFile , "utf8");
+    let lines = data.trim().split("\n");
+
+    for(let i = 0 ; i < lines.length ; i++){
+
+        let cols = lines[i].split(",");
+
+        if(cols[0] == shiftObj.driverID && cols[2] == shiftObj.date){
+            return {};
+        }
+    }
+
+    let shiftDuration = getShiftDuration(shiftObj.startTime , shiftObj.endTime);
+    let idleTime = getIdleTime(shiftObj.startTime , shiftObj.endTime);
+    let activeTime = getActiveTime(shiftDuration , idleTime);
+    let quota = metQuota(shiftObj.date , activeTime);
+
+    let newObj = {
+        driverID : shiftObj.driverID ,
+        driverName : shiftObj.driverName ,
+        date : shiftObj.date ,
+        startTime : shiftObj.startTime ,
+        endTime : shiftObj.endTime ,
+        shiftDuration : shiftDuration ,
+        idleTime : idleTime ,
+        activeTime : activeTime ,
+        metQuota : quota ,
+        hasBonus : false
+    };
+
+    let newLine =
+        newObj.driverID + "," +
+        newObj.driverName + "," +
+        newObj.date + "," +
+        newObj.startTime + "," +
+        newObj.endTime + "," +
+        newObj.shiftDuration + "," +
+        newObj.idleTime + "," +
+        newObj.activeTime + "," +
+        newObj.metQuota + "," +
+        newObj.hasBonus;
+
+    let lastIndex = -1;
+
+    for(let i = 0 ; i < lines.length ; i++){
+        let cols = lines[i].split(",");
+        if(cols[0] == shiftObj.driverID){
+            lastIndex = i;
+        }
+    }
+
+    if(lastIndex == -1){
+        lines.push(newLine);
+    }
+    else{
+        lines.splice(lastIndex + 1 , 0 , newLine);
+    }
+
+    let newData = lines.join("\n");
+
+    fs.writeFileSync(textFile , newData);
+
+    return newObj;
+
 }
 
 // ============================================================
